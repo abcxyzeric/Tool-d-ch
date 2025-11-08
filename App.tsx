@@ -553,7 +553,18 @@ const App: React.FC = () => {
 
         const savedSafetySettings = localStorage.getItem('safety_settings');
         if (savedSafetySettings) {
-            setSafetySettings(JSON.parse(savedSafetySettings));
+            const parsedSettings = JSON.parse(savedSafetySettings);
+            // Defensively merge loaded settings to prevent crashes from malformed data
+            if (parsedSettings && typeof parsedSettings === 'object') {
+                setSafetySettings(prevSettings => ({
+                    ...prevSettings,
+                    ...parsedSettings,
+                    thresholds: {
+                        ...prevSettings.thresholds,
+                        ...(parsedSettings.thresholds || {}),
+                    },
+                }));
+            }
         }
 
     } catch (e) {
