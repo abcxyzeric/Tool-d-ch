@@ -18,7 +18,8 @@ const TerminologyPage: React.FC<TerminologyPageProps> = ({ keywords, setKeywords
     const handleAddKeyword = (e: React.FormEvent) => {
         e.preventDefault();
         if (newKeyword.trim() && !keywords.some(k => k.value.toLowerCase() === newKeyword.trim().toLowerCase())) {
-            setKeywords(prev => [...prev, { id: crypto.randomUUID(), value: newKeyword.trim() }]);
+            // FIX: Add missing 'enabled' property to match the Keyword type.
+            setKeywords(prev => [...prev, { id: crypto.randomUUID(), value: newKeyword.trim(), enabled: true }]);
             setNewKeyword('');
         }
     };
@@ -30,7 +31,8 @@ const TerminologyPage: React.FC<TerminologyPageProps> = ({ keywords, setKeywords
     const handleAddProperNoun = (e: React.FormEvent) => {
         e.preventDefault();
         if (newProperNounSource.trim() && newProperNounTranslation.trim() && !properNouns.some(p => p.source.toLowerCase() === newProperNounSource.trim().toLowerCase())) {
-            setProperNouns(prev => [...prev, { id: crypto.randomUUID(), source: newProperNounSource.trim(), translation: newProperNounTranslation.trim() }]);
+            // FIX: Add missing 'enabled' property to match the ProperNoun type.
+            setProperNouns(prev => [...prev, { id: crypto.randomUUID(), source: newProperNounSource.trim(), translation: newProperNounTranslation.trim(), enabled: true }]);
             setNewProperNounSource('');
             setNewProperNounTranslation('');
         }

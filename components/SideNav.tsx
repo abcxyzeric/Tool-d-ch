@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { HomeIcon, SettingsIcon, KeyIcon, PaletteIcon, DocumentTextIcon, ClockIcon, ShieldCheckIcon, BookOpenIcon } from './icons';
+import { HomeIcon, SettingsIcon, KeyIcon, PaletteIcon, DocumentTextIcon, ClockIcon, ShieldCheckIcon } from './icons';
 
-type Page = 'start' | 'settings' | 'analyzer' | 'history' | 'safetySettings' | 'terminology';
+type Page = 'start' | 'settings' | 'analyzer' | 'history' | 'safetySettings';
 
 interface SideNavProps {
   currentPage: Page;

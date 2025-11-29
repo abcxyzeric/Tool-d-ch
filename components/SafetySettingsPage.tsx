@@ -51,13 +51,16 @@ const SafetySettingsPage: React.FC<SafetySettingsPageProps> = ({ settings, onSet
       </header>
 
       <div className="p-4 bg-blue-900/30 rounded-lg border border-blue-700/50 text-sm text-blue-200 mb-6">
-        <p className="font-semibold mb-2">Cách tiếp cận mới để tránh lỗi "Prohibited"</p>
-        <p>
-          Dựa trên tài liệu chính thức của Google, phương pháp tốt nhất để tránh bị chặn nội dung là sử dụng trực tiếp cài đặt an toàn của API. Các phương pháp mã hóa phức tạp trước đây đã được loại bỏ.
-        </p>
-        <p className="mt-2">
-          <strong>Để có bản dịch không bị kiểm duyệt, hãy <span className="font-bold">tắt bộ lọc an toàn</span> hoặc đặt tất cả các danh mục thành <span className="font-mono bg-gray-700 px-1 rounded">'Tắt bộ lọc (Không chặn)'</span>.</strong>
-        </p>
+        <p className="font-semibold mb-2">Chế độ hoạt động kép</p>
+        <p>Công cụ này hoạt động ở hai chế độ dựa trên cài đặt của bạn:</p>
+        <ul className="list-disc list-inside mt-2 space-y-2">
+            <li>
+            <strong>Bật lọc an toàn (Chế độ Tiêu chuẩn):</strong> Văn bản của bạn được gửi trực tiếp đến Gemini API và bộ lọc an toàn sẽ hoạt động theo các mức chặn bạn đã định cấu hình bên dưới. Sử dụng chế độ này cho nội dung thông thường.
+            </li>
+            <li>
+            <strong>Tắt lọc an toàn (Chế độ Vượt qua An toàn):</strong> Để xử lý nội dung nhạy cảm và tránh lỗi "prohibited", công cụ sẽ kích hoạt một giao thức đặc biệt. Văn bản đầu vào của bạn sẽ được làm mờ (obfuscated) và AI sẽ được hướng dẫn theo một "Giao thức Nghiên cứu Học thuật" để giải mã và xử lý nội dung gốc một cách trung thực và không bị kiểm duyệt.
+            </li>
+        </ul>
       </div>
 
       <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6 space-y-6">

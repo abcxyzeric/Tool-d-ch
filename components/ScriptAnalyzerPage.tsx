@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { analyzeScript, CustomSafetySettings } from '../services/geminiService';
-import { DocumentTextIcon, UploadIcon, CheckIcon, XIcon } from './icons';
-import type { AnalysisHistoryItem, Notification } from '../types';
+import { DocumentTextIcon, UploadIcon, CheckIcon, XIcon, ChevronRightIcon } from './icons';
+import type { AnalysisHistoryItem, Notification, ProcessingFile } from '../types';
 
 
 interface ScriptAnalyzerPageProps {
@@ -11,18 +11,14 @@ interface ScriptAnalyzerPageProps {
   onAddAnalysisHistory: (item: Omit<AnalysisHistoryItem, 'id' | 'timestamp' | 'folderId'>) => void;
   safetySettings: CustomSafetySettings;
   onShowNotification: (notification: Omit<Notification, 'id'>) => void;
+  processingFiles: ProcessingFile[];
+  setProcessingFiles: React.Dispatch<React.SetStateAction<ProcessingFile[]>>;
 }
 
-interface ProcessingFile {
-  id: string;
-  name: string;
-  status: 'loading' | 'success' | 'error';
-  error?: string;
-}
 
-const ScriptAnalyzerPage: React.FC<ScriptAnalyzerPageProps> = ({ activeApiKey, onOpenApiSettings, onAddAnalysisHistory, safetySettings, onShowNotification }) => {
-  const [processingFiles, setProcessingFiles] = useState<ProcessingFile[]>([]);
+const ScriptAnalyzerPage: React.FC<ScriptAnalyzerPageProps> = ({ activeApiKey, onOpenApiSettings, onAddAnalysisHistory, safetySettings, onShowNotification, processingFiles, setProcessingFiles }) => {
   const [error, setError] = useState<string | null>(null);
+  const [showAllFiles, setShowAllFiles] = useState(false);
 
   const handleAnalysis = useCallback(async (file: File, processId: string) => {
     if (!activeApiKey) {
@@ -43,10 +39,11 @@ const ScriptAnalyzerPage: React.FC<ScriptAnalyzerPageProps> = ({ activeApiKey, o
         setProcessingFiles(prev => prev.map(f => f.id === processId ? { ...f, status: 'error', error: errorMessage } : f));
         onShowNotification({ type: 'error', message: `Phân tích "${file.name}" thất bại.` });
     }
-  }, [activeApiKey, safetySettings, onAddAnalysisHistory, onShowNotification, onOpenApiSettings]);
+  }, [activeApiKey, safetySettings, onAddAnalysisHistory, onShowNotification, onOpenApiSettings, setProcessingFiles]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null);
+    setShowAllFiles(true); // Always expand when new files are added
     const newFilesToProcess: ProcessingFile[] = acceptedFiles.map(file => ({
         id: crypto.randomUUID(),
         name: file.name,
@@ -59,7 +56,7 @@ const ScriptAnalyzerPage: React.FC<ScriptAnalyzerPageProps> = ({ activeApiKey, o
         handleAnalysis(acceptedFiles[index], fileToProcess.id);
     });
 
-  }, [handleAnalysis]);
+  }, [handleAnalysis, setProcessingFiles]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -88,6 +85,8 @@ const ScriptAnalyzerPage: React.FC<ScriptAnalyzerPageProps> = ({ activeApiKey, o
             return <XIcon className="h-5 w-5 text-red-400" />;
     }
   };
+
+  const filesToShow = showAllFiles ? processingFiles : processingFiles.slice(0, 10);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -120,8 +119,8 @@ const ScriptAnalyzerPage: React.FC<ScriptAnalyzerPageProps> = ({ activeApiKey, o
         {processingFiles.length > 0 && (
              <div className="mt-8 bg-gray-800/50 border border-gray-700/50 rounded-xl p-4">
                 <h3 className="text-lg font-semibold text-gray-200 mb-3">Tiến trình phân tích</h3>
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                    {processingFiles.map(file => (
+                <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2">
+                    {filesToShow.map(file => (
                         <div key={file.id} className="bg-gray-700/50 p-3 rounded-lg flex items-center justify-between">
                             <div className="flex-grow min-w-0">
                                 <p className="text-sm font-medium text-gray-200 truncate">{file.name}</p>
@@ -133,6 +132,14 @@ const ScriptAnalyzerPage: React.FC<ScriptAnalyzerPageProps> = ({ activeApiKey, o
                         </div>
                     ))}
                 </div>
+                 {processingFiles.length > 10 && (
+                    <div className="text-center mt-3">
+                        <button onClick={() => setShowAllFiles(!showAllFiles)} className="text-sm text-[var(--primary-400)] hover:text-[var(--primary-300)] flex items-center gap-1 mx-auto">
+                            <span>{showAllFiles ? 'Ẩn bớt' : `Hiển thị thêm ${processingFiles.length - 10} tệp`}</span>
+                            <ChevronRightIcon className={`w-4 h-4 transition-transform ${showAllFiles ? 'rotate-[-90deg]' : 'rotate-90'}`} />
+                        </button>
+                    </div>
+                )}
              </div>
         )}
 

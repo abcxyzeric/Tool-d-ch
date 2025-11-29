@@ -46,10 +46,13 @@ const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({ item, onClose }
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-200 truncate pr-8">
-            {isTranslation ? (item.name || 'Chi tiết bản dịch') : item.fileName}
-          </h2>
-          <div className="flex items-center gap-2">
+           <div className="min-w-0 pr-4">
+              <h2 className="text-lg font-semibold text-gray-200 truncate">
+                  {isTranslation ? item.name : item.fileName}
+              </h2>
+              {isTranslation && <p className="text-sm text-gray-400">Chi tiết bản dịch</p>}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
             {!isTranslation && (
               <button
                 onClick={() => handleDownload(item.originalContent, item.fileName)}

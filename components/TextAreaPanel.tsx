@@ -10,10 +10,11 @@ interface TextAreaPanelProps {
   isReadOnly: boolean;
   charCount: number;
   onScroll?: (event: React.UIEvent<HTMLTextAreaElement>) => void;
+  onPaste?: (event: React.ClipboardEvent<HTMLTextAreaElement>) => void;
 }
 
 const TextAreaPanel = React.forwardRef<HTMLTextAreaElement, TextAreaPanelProps>(
-  ({ id, label, value, onChange, placeholder, isReadOnly, charCount, onScroll }, ref) => {
+  ({ id, label, value, onChange, placeholder, isReadOnly, charCount, onScroll, onPaste }, ref) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -65,6 +66,7 @@ const TextAreaPanel = React.forwardRef<HTMLTextAreaElement, TextAreaPanelProps>(
         <textarea
           ref={ref}
           onScroll={onScroll}
+          onPaste={onPaste}
           id={id}
           value={value}
           onChange={(e) => onChange && onChange(e.target.value)}

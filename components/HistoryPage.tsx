@@ -1,7 +1,9 @@
+
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { TranslationHistoryItem, AnalysisHistoryItem, HistoryFolder } from '../types';
 import { SUPPORTED_LANGUAGES, SOURCE_LANGUAGES_WITH_AUTO } from '../constants';
-import { TrashIcon, SwitchIcon, XIcon, PencilIcon, FolderIcon, FolderPlusIcon, FolderArrowDownIcon, DotsVerticalIcon, DownloadIcon } from './icons';
+import { TrashIcon, SwitchIcon, XIcon, PencilIcon, FolderIcon, FolderPlusIcon, FolderArrowDownIcon, DotsVerticalIcon, DownloadIcon, ChevronRightIcon } from './icons';
 import HistoryDetailModal from './HistoryDetailModal';
 
 const handleDownload = (content: string, filename: string) => {
@@ -16,7 +18,66 @@ const handleDownload = (content: string, filename: string) => {
     URL.revokeObjectURL(url);
 };
 
-// --- Sub-components for list items ---
+// --- Sub-components ---
+
+const DropdownMenu: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative" ref={menuRef}>
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(prev => !prev);
+                }}
+                className="p-1.5 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/80 transition-colors"
+            >
+                <DotsVerticalIcon className="w-4 h-4" />
+            </button>
+            {isOpen && (
+                <div className="absolute top-full right-0 mt-1 w-48 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-20">
+                    <ul className="text-sm text-gray-200" onClick={() => setIsOpen(false)}>
+                        {children}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ConfirmModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+}> = ({ isOpen, onClose, onConfirm, title, message }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center" onClick={onClose}>
+            <div className="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+                <p className="text-sm text-gray-400 mb-6">{message}</p>
+                <div className="flex justify-end gap-3">
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 hover:bg-gray-500 rounded-md">Hủy</button>
+                    <button type="button" onClick={onConfirm} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const TranslationHistoryListItem: React.FC<{
     item: TranslationHistoryItem;
@@ -49,7 +110,7 @@ const TranslationHistoryListItem: React.FC<{
     const targetLangName = SUPPORTED_LANGUAGES.find(l => l.code === item.targetLang)?.name || item.targetLang;
 
     return (
-        <li className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-[var(--primary-600)] transition-colors relative group" onClick={onViewDetail}>
+        <li className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-[var(--primary-600)] transition-colors relative group cursor-pointer" onClick={onViewDetail}>
             <div className="flex justify-between items-start">
                 <div className="flex-grow min-w-0 pr-16">
                     {isEditing ? (
@@ -67,7 +128,7 @@ const TranslationHistoryListItem: React.FC<{
                             className="bg-gray-900 border border-gray-600 rounded-md px-2 py-1 text-sm w-full mb-2"
                         />
                     ) : (
-                        <p className="font-semibold text-gray-200 truncate cursor-pointer" title={displayName}>
+                        <p className="font-semibold text-gray-200 truncate" title={displayName}>
                             {displayName}
                         </p>
                     )}
@@ -99,7 +160,7 @@ const TranslationHistoryListItem: React.FC<{
                     />
                 </div>
             </div>
-            <p className="text-sm text-gray-400 truncate mt-2 cursor-pointer">
+            <p className="text-sm text-gray-400 truncate mt-2">
                 <span className="font-semibold text-[var(--primary-400)]">Dịch:</span> {item.translatedText}
             </p>
         </li>
@@ -132,7 +193,7 @@ const AnalysisHistoryListItem: React.FC<{
     };
 
     return (
-        <li className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-[var(--primary-600)] transition-colors relative group" onClick={onViewDetail}>
+        <li className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-[var(--primary-600)] transition-colors relative group cursor-pointer" onClick={onViewDetail}>
             <div className="flex justify-between items-start">
                 <div className="flex-grow min-w-0 pr-16">
                     {isEditing ? (
@@ -150,7 +211,7 @@ const AnalysisHistoryListItem: React.FC<{
                             className="bg-gray-900 border border-gray-600 rounded-md px-2 py-1 text-sm w-full mb-2"
                         />
                     ) : (
-                        <p className="font-semibold text-gray-200 truncate cursor-pointer" title={item.fileName}>
+                        <p className="font-semibold text-gray-200 truncate" title={item.fileName}>
                             {item.fileName}
                         </p>
                     )}
@@ -186,7 +247,7 @@ const AnalysisHistoryListItem: React.FC<{
                     />
                 </div>
             </div>
-             <p className="text-sm text-gray-400 truncate mt-2 cursor-pointer">
+             <p className="text-sm text-gray-400 truncate mt-2">
                 {item.analysisResult.split('\n')[1] || 'Nhấp để xem chi tiết...'}
             </p>
         </li>
@@ -243,13 +304,89 @@ const FolderModal: React.FC<{
 };
 
 
+const FolderTreeItem: React.FC<{
+    folder: HistoryFolder;
+    allFolders: HistoryFolder[];
+    level: number;
+    selectedFolderId: string | null;
+    expandedFolderIds: string[];
+    onSelectFolder: (id: string) => void;
+    onToggleExpand: (id: string) => void;
+    onOpenModal: (mode: 'rename' | 'create_sub' | 'delete', folder: HistoryFolder) => void;
+}> = ({ folder, allFolders, level, selectedFolderId, expandedFolderIds, onSelectFolder, onToggleExpand, onOpenModal }) => {
+    const children = useMemo(() => allFolders.filter(f => f.parentId === folder.id), [allFolders, folder.id]);
+    const isExpanded = expandedFolderIds.includes(folder.id);
+    const hasChildren = children.length > 0;
+
+    return (
+        <>
+            <div
+                onClick={() => onSelectFolder(folder.id)}
+                title={folder.name}
+                className={`w-full flex items-center gap-2 rounded-md text-sm transition-colors group cursor-pointer ${selectedFolderId === folder.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-700/50'}`}
+                style={{ paddingLeft: `${level * 16}px` }}
+            >
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (hasChildren) onToggleExpand(folder.id);
+                    }}
+                    className={`p-1 rounded-md ${!hasChildren ? 'opacity-0 cursor-default' : ''}`}
+                >
+                    <ChevronRightIcon className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                </button>
+
+                <div className="flex items-center gap-2 py-2 flex-grow min-w-0">
+                    <FolderIcon className="w-5 h-5 flex-shrink-0" />
+                    <span className="truncate">{folder.name}</span>
+                </div>
+
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-1 flex-shrink-0">
+                    <DropdownMenu>
+                         <li className="px-3 py-2 hover:bg-gray-700/80 cursor-pointer flex items-center gap-2"
+                            onClick={(e) => { e.stopPropagation(); onOpenModal('create_sub', folder)}}>
+                            <FolderPlusIcon className="w-4 h-4" /> Thêm thư mục con
+                        </li>
+                        <li className="px-3 py-2 hover:bg-gray-700/80 cursor-pointer flex items-center gap-2"
+                            onClick={(e) => { e.stopPropagation(); onOpenModal('rename', folder)}}>
+                            <PencilIcon className="w-4 h-4" /> Đổi tên
+                        </li>
+                        <li className="px-3 py-2 hover:bg-gray-700/80 cursor-pointer flex items-center gap-2 text-red-400"
+                            onClick={(e) => { e.stopPropagation(); onOpenModal('delete', folder)}}>
+                            <TrashIcon className="w-4 h-4" /> Xóa
+                        </li>
+                    </DropdownMenu>
+                </div>
+            </div>
+            {isExpanded && hasChildren && (
+                <div className="space-y-1">
+                    {children.map(child => (
+                        <FolderTreeItem
+                            key={child.id}
+                            folder={child}
+                            allFolders={allFolders}
+                            level={level + 1}
+                            selectedFolderId={selectedFolderId}
+                            expandedFolderIds={expandedFolderIds}
+                            onSelectFolder={onSelectFolder}
+                            onToggleExpand={onToggleExpand}
+                            onOpenModal={onOpenModal}
+                        />
+                    ))}
+                </div>
+            )}
+        </>
+    );
+};
+
+
 // --- Main Page Component ---
 interface HistoryPageProps {
   translationHistory: TranslationHistoryItem[];
   analysisHistory: AnalysisHistoryItem[];
   folders: HistoryFolder[];
   onFolderAction: {
-    add: (name: string, type: 'translation' | 'analysis') => HistoryFolder | undefined;
+    add: (name: string, type: 'translation' | 'analysis', parentId?: string | null) => HistoryFolder | undefined;
     rename: (id: string, newName: string) => void;
     delete: (id: string) => void;
     moveTranslations: (itemIds: string[], folderId: string | null) => void;
@@ -257,6 +394,8 @@ interface HistoryPageProps {
   };
   onRenameTranslationItem: (id: string, newName: string) => void;
   onRenameAnalysisItem: (id: string, newName: string) => void;
+  onDeleteTranslationItems: (ids: string[]) => void;
+  onDeleteAnalysisItems: (ids: string[]) => void;
 }
 
 const HistoryPage: React.FC<HistoryPageProps> = ({
@@ -266,17 +405,23 @@ const HistoryPage: React.FC<HistoryPageProps> = ({
   onFolderAction,
   onRenameTranslationItem,
   onRenameAnalysisItem,
+  onDeleteTranslationItems,
+  onDeleteAnalysisItems,
 }) => {
   type Tab = 'translation' | 'analysis';
   const [activeTab, setActiveTab] = useState<Tab>('translation');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [selectedItemForDetail, setSelectedItemForDetail] = useState<TranslationHistoryItem | AnalysisHistoryItem | null>(null);
-  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
-  const [isBulkCreateFolderModalOpen, setIsBulkCreateFolderModalOpen] = useState(false);
+  
+  // Modal states
+  const [folderModal, setFolderModal] = useState<{ isOpen: boolean, mode: 'create' | 'rename' | 'create_sub' | 'bulk_create', folder?: HistoryFolder }>({ isOpen: false, mode: 'create' });
+  const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean, type: 'items' | 'folder', id?: string }>({ isOpen: false, type: 'items' });
   
   const [isMoveToOpen, setIsMoveToOpen] = useState(false);
   const moveToRef = useRef<HTMLDivElement>(null);
+
+  const [expandedFolderIds, setExpandedFolderIds] = useState<string[]>([]);
   
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -285,32 +430,63 @@ const HistoryPage: React.FC<HistoryPageProps> = ({
         }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [moveToRef]);
 
 
-  const handleCreateFolder = (name: string) => {
-      onFolderAction.add(name, activeTab);
-      setIsFolderModalOpen(false);
+  const handleFolderSubmit = (name: string) => {
+      if (folderModal.mode === 'create') {
+          onFolderAction.add(name, activeTab, null);
+      } else if (folderModal.mode === 'create_sub' && folderModal.folder) {
+          onFolderAction.add(name, activeTab, folderModal.folder.id);
+          setExpandedFolderIds(prev => [...prev, folderModal.folder!.id]);
+      } else if (folderModal.mode === 'rename' && folderModal.folder) {
+          onFolderAction.rename(folderModal.folder.id, name);
+      } else if (folderModal.mode === 'bulk_create') {
+          const newFolder = onFolderAction.add(name, activeTab, null);
+          if (newFolder) {
+              if (activeTab === 'translation') onFolderAction.moveTranslations(selectedItemIds, newFolder.id);
+              else onFolderAction.moveAnalyses(selectedItemIds, newFolder.id);
+              setSelectedFolderId(newFolder.id);
+              setSelectedItemIds([]);
+          }
+      }
+      setFolderModal({ isOpen: false, mode: 'create' });
   };
 
-  const handleBulkCreateFolder = (name: string) => {
-    const newFolder = onFolderAction.add(name, activeTab);
-    if (newFolder) {
-        if (activeTab === 'translation') {
-            onFolderAction.moveTranslations(selectedItemIds, newFolder.id);
-        } else {
-            onFolderAction.moveAnalyses(selectedItemIds, newFolder.id);
+  const handleDeleteFolder = () => {
+    if (confirmDelete.type === 'folder' && confirmDelete.id) {
+        if (selectedFolderId === confirmDelete.id) {
+            setSelectedFolderId(null);
         }
-        setSelectedFolderId(newFolder.id);
-        setSelectedItemIds([]);
+        onFolderAction.delete(confirmDelete.id);
     }
-    setIsBulkCreateFolderModalOpen(false);
+    setConfirmDelete({ isOpen: false, type: 'items' });
+  };
+
+  const handleDeleteItems = () => {
+    if (activeTab === 'translation') onDeleteTranslationItems(selectedItemIds);
+    else onDeleteAnalysisItems(selectedItemIds);
+    setSelectedItemIds([]);
+    setConfirmDelete({ isOpen: false, type: 'items' });
+  };
+
+  const handleToggleExpand = (folderId: string) => {
+    setExpandedFolderIds(prev =>
+        prev.includes(folderId) ? prev.filter(id => id !== folderId) : [...prev, folderId]
+    );
+  };
+
+  const handleFolderModalOpen = (mode: 'rename' | 'create_sub' | 'delete', folder: HistoryFolder) => {
+    if (mode === 'delete') {
+      setConfirmDelete({ isOpen: true, type: 'folder', id: folder.id });
+    } else {
+      setFolderModal({ isOpen: true, mode, folder });
+    }
   };
 
   const currentFolders = useMemo(() => folders.filter(f => f.type === activeTab), [folders, activeTab]);
+  const rootFolders = useMemo(() => currentFolders.filter(f => !f.parentId), [currentFolders]);
 
   const displayedTranslations = useMemo(() => {
     return translationHistory.filter(item => item.folderId === selectedFolderId)
@@ -409,28 +585,32 @@ const HistoryPage: React.FC<HistoryPageProps> = ({
         {/* Folder Sidebar */}
         <aside className="md:col-span-1 bg-gray-800/30 p-4 rounded-lg border border-gray-700/30 flex flex-col">
             <h2 className="text-lg font-semibold mb-4 text-gray-200">Thư mục</h2>
-            <div className="flex-grow space-y-2 overflow-y-auto pr-1">
-                <button 
+            <div className="flex-grow space-y-1 overflow-y-auto pr-1">
+                <div 
                     onClick={() => setSelectedFolderId(null)}
-                    className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${selectedFolderId === null ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-700/50'}`}
+                    title="Chưa phân loại"
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors group cursor-pointer ${selectedFolderId === null ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-700/50'}`}
                 >
                     <FolderIcon className="w-5 h-5" />
-                    <span>Chưa phân loại</span>
-                </button>
-                {currentFolders.map(folder => (
-                    <button
+                    <span className="truncate">Chưa phân loại</span>
+                </div>
+                 <div className="border-t border-gray-700 my-2"></div>
+                {rootFolders.map(folder => (
+                    <FolderTreeItem
                         key={folder.id}
-                        onClick={() => setSelectedFolderId(folder.id)}
-                        className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${selectedFolderId === folder.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-700/50'}`}
-                    >
-                         <FolderIcon className="w-5 h-5" />
-                        <span className="truncate flex-grow">{folder.name}</span>
-                        {/* Add rename/delete buttons here */}
-                    </button>
+                        folder={folder}
+                        allFolders={currentFolders}
+                        level={0}
+                        selectedFolderId={selectedFolderId}
+                        expandedFolderIds={expandedFolderIds}
+                        onSelectFolder={setSelectedFolderId}
+                        onToggleExpand={handleToggleExpand}
+                        onOpenModal={handleFolderModalOpen}
+                    />
                 ))}
             </div>
             <div className="flex-shrink-0 mt-4">
-                 <button onClick={() => setIsFolderModalOpen(true)} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg transition-colors">
+                 <button onClick={() => setFolderModal({ isOpen: true, mode: 'create' })} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg transition-colors">
                     <FolderPlusIcon className="w-5 h-5"/>
                     Tạo thư mục mới
                 </button>
@@ -468,9 +648,13 @@ const HistoryPage: React.FC<HistoryPageProps> = ({
                         </div>
                     )}
                 </div>
-                 <button onClick={() => setIsBulkCreateFolderModalOpen(true)} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors">
+                 <button onClick={() => setFolderModal({ isOpen: true, mode: 'bulk_create' })} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors">
                     <FolderPlusIcon className="w-5 h-5" />
                     Tạo thư mục mới
+                </button>
+                <button onClick={() => setConfirmDelete({ isOpen: true, type: 'items' })} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors">
+                    <TrashIcon className="w-5 h-5" />
+                    Xóa
                 </button>
                 <div className="h-5 w-px bg-gray-600"></div>
                 <button onClick={() => setSelectedItemIds([])} className="p-1.5 text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 rounded-full">
@@ -485,16 +669,27 @@ const HistoryPage: React.FC<HistoryPageProps> = ({
         onClose={() => setSelectedItemForDetail(null)}
     />
     <FolderModal 
-        isOpen={isFolderModalOpen}
-        onClose={() => setIsFolderModalOpen(false)}
-        onSubmit={handleCreateFolder}
-        title="Tạo thư mục mới"
+        isOpen={folderModal.isOpen}
+        onClose={() => setFolderModal({ isOpen: false, mode: 'create' })}
+        onSubmit={handleFolderSubmit}
+        title={
+            folderModal.mode === 'create' ? 'Tạo thư mục gốc' : 
+            folderModal.mode === 'create_sub' ? `Tạo thư mục con trong "${folderModal.folder?.name}"` :
+            folderModal.mode === 'rename' ? 'Đổi tên thư mục' : 
+            `Tạo thư mục mới & di chuyển ${selectedItemIds.length} mục`
+        }
+        initialValue={folderModal.mode === 'rename' ? folderModal.folder?.name : ''}
     />
-    <FolderModal 
-        isOpen={isBulkCreateFolderModalOpen}
-        onClose={() => setIsBulkCreateFolderModalOpen(false)}
-        onSubmit={handleBulkCreateFolder}
-        title={`Tạo thư mục mới và di chuyển ${selectedItemIds.length} mục`}
+    <ConfirmModal 
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, type: 'items' })}
+        onConfirm={confirmDelete.type === 'items' ? handleDeleteItems : handleDeleteFolder}
+        title={confirmDelete.type === 'items' ? `Xóa ${selectedItemIds.length} mục?` : 'Xóa thư mục?'}
+        message={
+            confirmDelete.type === 'items' 
+            ? 'Hành động này không thể hoàn tác. Các mục đã chọn sẽ bị xóa vĩnh viễn.' 
+            : 'Tất cả thư mục con cũng sẽ bị xóa. Các mục bên trong sẽ được chuyển về "Chưa phân loại".'
+        }
     />
     </>
   );

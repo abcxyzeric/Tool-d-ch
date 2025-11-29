@@ -62,7 +62,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onKeysUp
     setIsChecking(true);
     const keysToValidate = keys.filter(k => k.value.trim() !== '');
     
-    // Set status to checking
+    // Đặt trạng thái thành đang kiểm tra
     setKeys(prev => prev.map(k => k.value.trim() ? { ...k, status: 'checking' } : k));
 
     await Promise.all(keysToValidate.map(async (key) => {
@@ -84,7 +84,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onKeysUp
       };
       reader.readAsText(file);
     }
-    // Reset file input
+    // Đặt lại input file
     if (event.target) {
         event.target.value = '';
     }
@@ -174,6 +174,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onKeysUp
             >
               <option value="gemini-2.5-flash" className="bg-gray-800 text-gray-200">Gemini 2.5 Flash (Nhanh, mặc định)</option>
               <option value="gemini-2.5-pro" className="bg-gray-800 text-gray-200">Gemini 2.5 Pro (Chất lượng cao hơn)</option>
+              <option value="gemini-3-pro-preview" className="bg-gray-800 text-gray-200">Gemini 3 Pro (Chất lượng vượt trội)</option>
             </select>
           </div>
 
