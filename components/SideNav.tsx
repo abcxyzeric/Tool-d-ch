@@ -1,9 +1,8 @@
 
-
 import React, { useState } from 'react';
-import { HomeIcon, SettingsIcon, KeyIcon, PaletteIcon, DocumentTextIcon, ClockIcon, ShieldCheckIcon, ChatBubbleLeftRightIcon } from './icons';
+import { HomeIcon, SettingsIcon, KeyIcon, PaletteIcon, DocumentTextIcon, ClockIcon, ShieldCheckIcon } from './icons';
 
-type Page = 'start' | 'settings' | 'rpg_parser' | 'history' | 'safetySettings' | 'renpy_translator';
+type Page = 'start' | 'settings' | 'rpg_parser' | 'history' | 'safetySettings';
 
 interface SideNavProps {
   currentPage: Page;
@@ -45,15 +44,6 @@ const SideNav: React.FC<SideNavProps> = ({ currentPage, onNavigate, onOpenApiSet
               >
                 <DocumentTextIcon className="w-5 h-5" />
                 <span className="truncate">Dịch RPG Maker MZ</span>
-              </button>
-            </li>
-            <li>
-              <button 
-                onClick={() => onNavigate('renpy_translator')}
-                className={`${navItemClasses} w-full ${currentPage === 'renpy_translator' ? activeNavItemClasses : ''}`}
-              >
-                <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                <span className="truncate">Dịch Ren'Py</span>
               </button>
             </li>
             <li>

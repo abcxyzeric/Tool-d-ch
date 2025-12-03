@@ -1,5 +1,4 @@
 
-
 export interface Language {
   code: string;
   name: string;
@@ -42,26 +41,6 @@ export interface RpgMakerFile {
   entries: RpgMakerEntry[];
   status: 'loaded' | 'processing' | 'done';
 }
-
-// --- Interface mới cho Ren'Py ---
-export interface RenpyEntry {
-  id: number; // Dùng số dòng làm ID
-  speaker: string; // Tên nhân vật (ví dụ: "e", "sylvie")
-  originalText: string; // Nội dung thoại gốc
-  translatedText: string; // Nội dung sau khi dịch
-  type: 'dialogue' | 'string' | 'choice'; // Loại văn bản
-  context?: string; // Ghi chú hoặc comment đi kèm
-  status: 'pending' | 'translating' | 'done' | 'error';
-}
-
-export interface RenpyFile {
-  id: string;
-  fileName: string;
-  originalContent: string; // Giữ lại nội dung gốc để tái tạo file
-  entries: RenpyEntry[];
-  status: 'loaded' | 'processing' | 'done';
-}
-// ------------------------------
 
 export interface HistoryFolder {
   id: string;

@@ -2,13 +2,12 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { translateText, generateTitleForTranslation, CustomSafetySettings } from './services/geminiService';
 import { SUPPORTED_LANGUAGES, SOURCE_LANGUAGES_WITH_AUTO } from './constants';
-import { TranslationHistoryItem, AnalysisHistoryItem, HistoryFolder, Keyword, ProperNoun, Rule, Notification, ProcessingFile, RpgMakerFile, RenpyFile } from './types';
+import { TranslationHistoryItem, AnalysisHistoryItem, HistoryFolder, Keyword, ProperNoun, Rule, Notification, ProcessingFile, RpgMakerFile } from './types';
 import LanguageSelector from './components/LanguageSelector';
 import TextAreaPanel from './components/TextAreaPanel';
 import SettingsModal from './components/SettingsModal';
 import SideNav from './components/SideNav';
-import RpgMakerParserPage from './components/ScriptAnalyzerPage';
-import RenpyTranslatorPage from './components/RenpyTranslatorPage'; // Import trang mới
+import RpgMakerParserPage from './components/ScriptAnalyzerPage'; // Import file đã đổi nội dung
 import HistoryPage from './components/HistoryPage';
 import SafetySettingsPage from './components/SafetySettingsPage';
 import { NotificationContainer } from './components/Notification';
@@ -613,12 +612,12 @@ const TranslationPage = ({
 
 
 const App: React.FC = () => {
-  type Page = 'start' | 'settings' | 'rpg_parser' | 'history' | 'safetySettings' | 'renpy_translator';
+  type Page = 'start' | 'settings' | 'rpg_parser' | 'history' | 'safetySettings';
   const [currentPage, setCurrentPage] = useState<Page>('start');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [activeApiKey, setActiveApiKey] = useState<string | null>(null);
   const [theme, setTheme] = useState('purple');
-  const [model, setModel] = useState('gemini-3-pro-preview');
+  const [model, setModel] = useState('gemini-3-pro-preview'); // Changed default to gemini-3-pro-preview
 
   // Sidebar state
   const [sidebarWidth, setSidebarWidth] = useState(256);
@@ -638,9 +637,6 @@ const App: React.FC = () => {
   // RPG Parser state (Lifted Up)
   const [rpgFiles, setRpgFiles] = useState<RpgMakerFile[]>([]);
   const [rpgMapInfos, setRpgMapInfos] = useState<Record<number, any>>({});
-  
-  // Renpy Parser state (Lifted Up)
-  const [renpyFiles, setRenpyFiles] = useState<RenpyFile[]>([]);
 
 
   // History state
@@ -699,7 +695,7 @@ const App: React.FC = () => {
     updateActiveKey();
     const savedTheme = localStorage.getItem('app-theme') || 'purple';
     setTheme(savedTheme);
-    const savedModel = localStorage.getItem('gemini-model') || 'gemini-3-pro-preview';
+    const savedModel = localStorage.getItem('gemini-model') || 'gemini-3-pro-preview'; // Changed fallback to gemini-3-pro-preview
     setModel(savedModel);
     const savedInputText = localStorage.getItem('translation_input_text') || '';
     setInputText(savedInputText);
@@ -1017,24 +1013,11 @@ const App: React.FC = () => {
                 properNouns={properNouns}
                 rules={rules}
                 model={model}
-                files={rpgFiles} 
-                setFiles={setRpgFiles} 
-                mapInfos={rpgMapInfos} 
-                setMapInfos={setRpgMapInfos} 
+                files={rpgFiles} // Truyền files từ state của App
+                setFiles={setRpgFiles} // Truyền setter
+                mapInfos={rpgMapInfos} // Truyền mapInfos
+                setMapInfos={setRpgMapInfos} // Truyền setter
             />;
-        case 'renpy_translator': // Case mới
-             return <RenpyTranslatorPage
-                activeApiKey={activeApiKey}
-                onOpenApiSettings={() => setIsSettingsOpen(true)}
-                safetySettings={safetySettings}
-                onShowNotification={addNotification}
-                keywords={keywords}
-                properNouns={properNouns}
-                rules={rules}
-                model={model}
-                files={renpyFiles}
-                setFiles={setRenpyFiles}
-             />;
         case 'history':
             return <HistoryPage
                 translationHistory={translationHistory}
