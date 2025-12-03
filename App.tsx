@@ -1,12 +1,14 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { translateText, generateTitleForTranslation, CustomSafetySettings } from './services/geminiService';
 import { SUPPORTED_LANGUAGES, SOURCE_LANGUAGES_WITH_AUTO } from './constants';
-import { TranslationHistoryItem, AnalysisHistoryItem, HistoryFolder, Keyword, ProperNoun, Rule, Notification, ProcessingFile } from './types';
+import { TranslationHistoryItem, AnalysisHistoryItem, HistoryFolder, Keyword, ProperNoun, Rule, Notification, ProcessingFile, RpgMakerFile, RenpyFile } from './types';
 import LanguageSelector from './components/LanguageSelector';
 import TextAreaPanel from './components/TextAreaPanel';
 import SettingsModal from './components/SettingsModal';
 import SideNav from './components/SideNav';
-import ScriptAnalyzerPage from './components/ScriptAnalyzerPage';
+import RpgMakerParserPage from './components/ScriptAnalyzerPage';
+import RenpyTranslatorPage from './components/RenpyTranslatorPage'; // Import trang mới
 import HistoryPage from './components/HistoryPage';
 import SafetySettingsPage from './components/SafetySettingsPage';
 import { NotificationContainer } from './components/Notification';
@@ -307,33 +309,27 @@ const TranslationPage = ({
     const textAfter = inputText.substring(end);
 
     // LOGIC CHỐNG DÍNH CHỮ:
-    // Kiểm tra văn bản phía trước con trỏ (prefix context).
-    // Nếu có văn bản phía trước và nó không kết thúc bằng xuống dòng, ta phải chèn xuống dòng.
     let prefix = "";
     if (textBefore.length > 0) {
          if (!textBefore.endsWith('\n')) {
-             prefix = "\n\n"; // Cách ra 2 dòng nếu đang dính liền
+             prefix = "\n\n"; 
          } else if (!textBefore.endsWith('\n\n')) {
-             prefix = "\n"; // Nếu đã có 1 dòng, thêm 1 dòng nữa cho đủ 2
+             prefix = "\n"; 
          }
     }
 
-    // Văn bản chèn vào = (Khoảng cách an toàn) + (Nội dung dán) + (Chuẩn bị 2 dòng cho lần sau)
     const textToInsert = prefix + pastedText + '\n\n';
 
     const newText = textBefore + textToInsert + textAfter;
     setInputText(newText);
 
-    // Đặt lại vị trí con trỏ và cuộn xuống
     setTimeout(() => {
         if (textarea) {
-            // Cập nhật giá trị DOM để đảm bảo tính toán chính xác
             textarea.value = newText;
             const newCursorPosition = start + textToInsert.length;
             textarea.selectionStart = newCursorPosition;
             textarea.selectionEnd = newCursorPosition;
             
-            // Tự động cuộn đến vị trí con trỏ
             textarea.blur();
             textarea.focus();
             textarea.scrollTop = textarea.scrollHeight;
@@ -345,7 +341,7 @@ const TranslationPage = ({
   useEffect(() => {
     const handler = setTimeout(() => {
       localStorage.setItem('translation_input_text', inputText);
-    }, 500); // 500ms debounce
+    }, 500); 
 
     return () => {
       clearTimeout(handler);
@@ -617,12 +613,12 @@ const TranslationPage = ({
 
 
 const App: React.FC = () => {
-  type Page = 'start' | 'settings' | 'analyzer' | 'history' | 'safetySettings';
+  type Page = 'start' | 'settings' | 'rpg_parser' | 'history' | 'safetySettings' | 'renpy_translator';
   const [currentPage, setCurrentPage] = useState<Page>('start');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [activeApiKey, setActiveApiKey] = useState<string | null>(null);
   const [theme, setTheme] = useState('purple');
-  const [model, setModel] = useState('gemini-2.5-flash');
+  const [model, setModel] = useState('gemini-3-pro-preview');
 
   // Sidebar state
   const [sidebarWidth, setSidebarWidth] = useState(256);
@@ -639,6 +635,14 @@ const App: React.FC = () => {
   const [targetLang, setTargetLang] = useState<string>('vi');
   const [isAutoSpacingEnabled, setIsAutoSpacingEnabled] = useState(true);
 
+  // RPG Parser state (Lifted Up)
+  const [rpgFiles, setRpgFiles] = useState<RpgMakerFile[]>([]);
+  const [rpgMapInfos, setRpgMapInfos] = useState<Record<number, any>>({});
+  
+  // Renpy Parser state (Lifted Up)
+  const [renpyFiles, setRenpyFiles] = useState<RenpyFile[]>([]);
+
+
   // History state
   const [translationHistory, setTranslationHistory] = useState<TranslationHistoryItem[]>([]);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistoryItem[]>([]);
@@ -648,9 +652,6 @@ const App: React.FC = () => {
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [properNouns, setProperNouns] = useState<ProperNoun[]>([]);
   const [rules, setRules] = useState<Rule[]>([]);
-
-  // Script analyzer state
-  const [processingFiles, setProcessingFiles] = useState<ProcessingFile[]>([]);
 
   // Notification state
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -698,7 +699,7 @@ const App: React.FC = () => {
     updateActiveKey();
     const savedTheme = localStorage.getItem('app-theme') || 'purple';
     setTheme(savedTheme);
-    const savedModel = localStorage.getItem('gemini-model') || 'gemini-2.5-flash';
+    const savedModel = localStorage.getItem('gemini-model') || 'gemini-3-pro-preview';
     setModel(savedModel);
     const savedInputText = localStorage.getItem('translation_input_text') || '';
     setInputText(savedInputText);
@@ -724,7 +725,6 @@ const App: React.FC = () => {
         
         const savedHistoryFolders = localStorage.getItem('history_folders');
         if (savedHistoryFolders) {
-            // Backward compatibility for folders without parentId
             const parsedFolders = JSON.parse(savedHistoryFolders);
             setHistoryFolders(parsedFolders.map((f: any) => ({ ...f, parentId: f.parentId || null })));
         }
@@ -767,7 +767,6 @@ const App: React.FC = () => {
     }
   }, [updateActiveKey]);
 
-  // Apply theme
   useEffect(() => {
     const activeTheme = themes[theme as keyof typeof themes];
     if (activeTheme) {
@@ -828,7 +827,7 @@ const App: React.FC = () => {
           id: crypto.randomUUID(), 
           timestamp: Date.now(), 
           folderId: null,
-          name: 'Đang tạo tên...' // Placeholder name
+          name: 'Đang tạo tên...'
       };
       setTranslationHistory(prev => [newItem, ...prev].slice(0, 100));
 
@@ -843,7 +842,6 @@ const App: React.FC = () => {
               })
               .catch(err => {
                   console.error("Failed to generate title:", err);
-                  // Optionally update the name to indicate failure
                   setTranslationHistory(prev => 
                       prev.map(historyItem => 
                           historyItem.id === newItem.id ? { ...historyItem, name: 'Lỗi tạo tên' } : historyItem
@@ -882,8 +880,9 @@ const App: React.FC = () => {
 
   const handleHistoryFolderAction = {
     add: (name: string, type: 'translation' | 'analysis', parentId: string | null = null): HistoryFolder | undefined => {
+        // Map old 'analysis' type to new usage if needed, but for history folders type string matters
         if (!name.trim() || historyFolders.some(f => f.name === name.trim() && f.type === type && f.parentId === parentId)) return;
-        const newFolder: HistoryFolder = { id: crypto.randomUUID(), name: name.trim(), type, parentId };
+        const newFolder: HistoryFolder = { id: crypto.randomUUID(), name: name.trim(), type: type as any, parentId };
         setHistoryFolders(prev => [...prev, newFolder]);
         return newFolder;
     },
@@ -901,8 +900,6 @@ const App: React.FC = () => {
         findDescendants(id);
 
         setHistoryFolders(prev => prev.filter(f => !foldersToDeleteIds.includes(f.id)));
-        
-        // Un-assign items from all deleted folders
         setTranslationHistory(prev => prev.map(item => foldersToDeleteIds.includes(item.folderId || '') ? { ...item, folderId: null } : item));
         setAnalysisHistory(prev => prev.map(item => foldersToDeleteIds.includes(item.folderId || '') ? { ...item, folderId: null } : item));
     },
@@ -914,7 +911,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Sidebar resizing logic
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
       e.preventDefault();
       setIsResizing(true);
@@ -945,8 +941,8 @@ const App: React.FC = () => {
       const handleMouseMove = (e: MouseEvent) => {
           if (!isResizing) return;
           let newWidth = e.clientX;
-          if (newWidth < 200) newWidth = 200; // min width
-          if (newWidth > 500) newWidth = 500; // max width
+          if (newWidth < 200) newWidth = 200; 
+          if (newWidth > 500) newWidth = 500;
           setSidebarWidth(newWidth);
       };
 
@@ -974,7 +970,6 @@ const App: React.FC = () => {
     setIsSidebarCollapsed(prev => {
         const newState = !prev;
         localStorage.setItem('sidebar_collapsed', JSON.stringify(newState));
-        // When expanding, if sidebar is too small, reset it to a sensible default.
         if (!newState && sidebarWidth < 200) {
             const newWidth = 256;
             setSidebarWidth(newWidth);
@@ -1012,16 +1007,34 @@ const App: React.FC = () => {
                 onAutoSpacingChange={() => setIsAutoSpacingEnabled(prev => !prev)}
                 onShowNotification={addNotification}
             />;
-        case 'analyzer':
-            return <ScriptAnalyzerPage 
+        case 'rpg_parser':
+            return <RpgMakerParserPage 
                 activeApiKey={activeApiKey} 
                 onOpenApiSettings={() => setIsSettingsOpen(true)}
-                onAddAnalysisHistory={addAnalysisHistory}
                 safetySettings={safetySettings}
                 onShowNotification={addNotification}
-                processingFiles={processingFiles}
-                setProcessingFiles={setProcessingFiles}
+                keywords={keywords}
+                properNouns={properNouns}
+                rules={rules}
+                model={model}
+                files={rpgFiles} 
+                setFiles={setRpgFiles} 
+                mapInfos={rpgMapInfos} 
+                setMapInfos={setRpgMapInfos} 
             />;
+        case 'renpy_translator': // Case mới
+             return <RenpyTranslatorPage
+                activeApiKey={activeApiKey}
+                onOpenApiSettings={() => setIsSettingsOpen(true)}
+                safetySettings={safetySettings}
+                onShowNotification={addNotification}
+                keywords={keywords}
+                properNouns={properNouns}
+                rules={rules}
+                model={model}
+                files={renpyFiles}
+                setFiles={setRenpyFiles}
+             />;
         case 'history':
             return <HistoryPage
                 translationHistory={translationHistory}

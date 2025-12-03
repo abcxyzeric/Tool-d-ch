@@ -1,4 +1,5 @@
 
+
 export interface Language {
   code: string;
   name: string;
@@ -18,16 +19,54 @@ export interface TranslationHistoryItem {
 export interface AnalysisHistoryItem {
   id: string;
   fileName: string;
-  analysisResult: string;
   originalContent: string;
+  analysisResult: string;
   timestamp: number;
   folderId?: string | null;
 }
 
+// Interface mới cho dữ liệu RPG Maker đã tách
+export interface RpgMakerEntry {
+  id: string; // ID duy nhất để định danh vị trí (VD: EventID_PageID_CmdIdx)
+  originalText: string;
+  translatedText: string;
+  type: 'dialogue' | 'choice' | 'other';
+  speaker?: string; // Tên nhân vật (nếu có)
+  status: 'pending' | 'translating' | 'done' | 'error';
+  context?: string; // Thông tin ngữ cảnh (Event Name, Map ID...)
+}
+
+export interface RpgMakerFile {
+  id: string;
+  fileName: string;
+  entries: RpgMakerEntry[];
+  status: 'loaded' | 'processing' | 'done';
+}
+
+// --- Interface mới cho Ren'Py ---
+export interface RenpyEntry {
+  id: number; // Dùng số dòng làm ID
+  speaker: string; // Tên nhân vật (ví dụ: "e", "sylvie")
+  originalText: string; // Nội dung thoại gốc
+  translatedText: string; // Nội dung sau khi dịch
+  type: 'dialogue' | 'string' | 'choice'; // Loại văn bản
+  context?: string; // Ghi chú hoặc comment đi kèm
+  status: 'pending' | 'translating' | 'done' | 'error';
+}
+
+export interface RenpyFile {
+  id: string;
+  fileName: string;
+  originalContent: string; // Giữ lại nội dung gốc để tái tạo file
+  entries: RenpyEntry[];
+  status: 'loaded' | 'processing' | 'done';
+}
+// ------------------------------
+
 export interface HistoryFolder {
   id: string;
   name: string;
-  type: 'translation' | 'analysis';
+  type: 'translation' | 'analysis' | 'rpg_data'; 
   parentId?: string | null;
 }
 
