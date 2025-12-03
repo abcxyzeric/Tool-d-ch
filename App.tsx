@@ -2,13 +2,12 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { translateText, generateTitleForTranslation, CustomSafetySettings } from './services/geminiService';
 import { SUPPORTED_LANGUAGES, SOURCE_LANGUAGES_WITH_AUTO } from './constants';
-import { TranslationHistoryItem, AnalysisHistoryItem, HistoryFolder, Keyword, ProperNoun, Rule, Notification, ProcessingFile, RpgMakerFile, RenpyFile } from './types';
+import { TranslationHistoryItem, AnalysisHistoryItem, HistoryFolder, Keyword, ProperNoun, Rule, Notification, ProcessingFile, RpgMakerFile } from './types';
 import LanguageSelector from './components/LanguageSelector';
 import TextAreaPanel from './components/TextAreaPanel';
 import SettingsModal from './components/SettingsModal';
 import SideNav from './components/SideNav';
 import RpgMakerParserPage from './components/ScriptAnalyzerPage'; // Import file đã đổi nội dung
-import RenpyTranslatorPage from './components/RenpyTranslatorPage'; // Import trang RenPy
 import HistoryPage from './components/HistoryPage';
 import SafetySettingsPage from './components/SafetySettingsPage';
 import { NotificationContainer } from './components/Notification';
@@ -613,7 +612,7 @@ const TranslationPage = ({
 
 
 const App: React.FC = () => {
-  type Page = 'start' | 'settings' | 'rpg_parser' | 'renpy_parser' | 'history' | 'safetySettings';
+  type Page = 'start' | 'settings' | 'rpg_parser' | 'history' | 'safetySettings';
   const [currentPage, setCurrentPage] = useState<Page>('start');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [activeApiKey, setActiveApiKey] = useState<string | null>(null);
@@ -638,9 +637,6 @@ const App: React.FC = () => {
   // RPG Parser state (Lifted Up)
   const [rpgFiles, setRpgFiles] = useState<RpgMakerFile[]>([]);
   const [rpgMapInfos, setRpgMapInfos] = useState<Record<number, any>>({});
-
-  // Ren'Py Parser state (Lifted Up)
-  const [renpyFiles, setRenpyFiles] = useState<RenpyFile[]>([]);
 
 
   // History state
@@ -1021,19 +1017,6 @@ const App: React.FC = () => {
                 setFiles={setRpgFiles} // Truyền setter
                 mapInfos={rpgMapInfos} // Truyền mapInfos
                 setMapInfos={setRpgMapInfos} // Truyền setter
-            />;
-        case 'renpy_parser':
-            return <RenpyTranslatorPage
-                activeApiKey={activeApiKey}
-                onOpenApiSettings={() => setIsSettingsOpen(true)}
-                safetySettings={safetySettings}
-                onShowNotification={addNotification}
-                keywords={keywords}
-                properNouns={properNouns}
-                rules={rules}
-                model={model}
-                files={renpyFiles}
-                setFiles={setRenpyFiles}
             />;
         case 'history':
             return <HistoryPage

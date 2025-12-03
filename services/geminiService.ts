@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from "@google/genai";
 import type { SafetySetting } from "@google/genai";
-import type { Keyword, ProperNoun, Rule, RpgMakerEntry, RenpyFile, RenpyEntry } from '../types';
+import type { Keyword, ProperNoun, Rule, RpgMakerEntry } from '../types';
 import { obfuscateText } from './inputFilter';
 
 export interface CustomSafetySettings {
@@ -39,9 +39,7 @@ export async function translateText(
   model: string,
   safetySettingsConfig: CustomSafetySettings,
   terminology: { keywords: Keyword[], properNouns: ProperNoun[] },
-  rules: Rule[],
-  format: 'text' | 'rpg_maker' | 'renpy' = 'text', // Tham số mới
-  additionalContext: string = '' // Tham số mới cho ngữ cảnh
+  rules: Rule[]
 ): Promise<string> {
   if (!apiKey) {
     throw new Error("API key is not configured.");
@@ -85,26 +83,6 @@ export async function translateText(
    - Ensure these codes remain in their relative positions within the sentence.
 7. **BATCH TRANSLATION:** If the input contains multiple lines separated by "#####", treat them as a continuous dialogue or event. Translate each segment individually but maintain the context flow between them. Return the result separated by the same "#####" delimiter.`;
 
-  // Ren'Py specific instructions
-  const renpyInstructions = `
-6. **REN'PY CODE PRESERVATION (CRITICAL):**
-   - **Tags in Curly Braces {}:** You MUST NOT translate tags like {b}, {/b}, {i}, {color=#fff}, {size=+10}, {t}, {si}. Keep them exactly as is.
-   - **Variables in Square Brackets []:** You MUST NOT translate variables like [player_name], [score]. Keep them exactly as is.
-   - **Interpolation %:** Keep any %s, %d or %(variable)s syntax intact.
-   - **Example:** "Hello [name], check this {b}item{/b}!" -> "Chào [name], xem {b}vật phẩm{/b} này nè!"
-7. **BATCH TRANSLATION:** The input contains multiple lines separated by "#####". These lines form a continuous dialogue. Translate each segment individually but maintain the context/flow. Return the result separated by "#####".
-8. **SPECIAL CONTEXT:**
-   - If the input contains '{t}', it indicates "Internal Thought" (Suy nghĩ trong đầu). Translate with an inner-monologue style (suy tư, tự sự).
-   - ${additionalContext ? `CONTEXT INFO: ${additionalContext}` : ''}
-`;
-
-  let formatSpecificInstructions = '';
-  if (format === 'rpg_maker') {
-      formatSpecificInstructions = rpgMakerInstructions;
-  } else if (format === 'renpy') {
-      formatSpecificInstructions = renpyInstructions;
-  }
-
   if (safetySettingsConfig.enabled) {
     systemInstruction = `You are a professional Light Novel translator renowned for your ability to adapt text into natural, emotional, and flowing Vietnamese. Your translations should never sound robotic or like a machine.
 
@@ -115,7 +93,7 @@ export async function translateText(
 4.  **No Translationese:** Avoid rigid sentence structures. Rearrange clauses if necessary to make the Vietnamese sentence sound native and smooth. Do not just translate word-for-word.
 5.  **Formatting:** Preserve the exact number of line breaks and all original formatting.
 6.  **Clean Output:** Your response MUST consist ONLY of the final translated text. Do not include notes or explanations.
-${formatSpecificInstructions}
+${rpgMakerInstructions}
 ${terminologyInstruction}
 ${rulesInstruction}`;
     processedText = text;
@@ -134,7 +112,7 @@ ${rulesInstruction}`;
 4.  **Unfiltered:** Keep all explicit content but phrase it creatively and naturally, using the rich vocabulary of mature literature.
 5.  **Clean Output:** Your response MUST consist ONLY of the final translated text. Do not include notes, apologies, warnings, or the de-obfuscated intermediate text.
 6.  **Formatting:** Preserve the exact number of line breaks and all original formatting.
-${formatSpecificInstructions}
+${rpgMakerInstructions}
 ${terminologyInstruction}
 ${rulesInstruction}`;
     processedText = obfuscateText(text);
@@ -384,118 +362,4 @@ export function parseRpgMakerData(jsonContent: string, fileName: string, mapInfo
     }
 
     return entries.filter(e => e.originalText.trim() !== '');
-}
-
-// --- REN'PY PARSING LOGIC ---
-
-export function parseRenpyScript(content: string): RenpyEntry[] {
-    const lines = content.split('\n');
-    const entries: RenpyEntry[] = [];
-    
-    // Regex Patterns
-    // 1. Dialogue: indent + (optional speaker) + "text"
-    // e "Hello" or "Narrator"
-    const dialogueRegex = /^(\s*)(?:([a-zA-Z0-9_]+)\s+)?(["'])(.*)(["'])$/;
-    
-    // 2. Choice menu item: indent + "Choice" + :
-    const choiceRegex = /^(\s*)(["'])(.*)(["'])(:)$/;
-
-    lines.forEach((line, index) => {
-        // Skip comments
-        if (line.trim().startsWith('#')) return;
-
-        // Check for Choice (Menu)
-        const choiceMatch = line.match(choiceRegex);
-        if (choiceMatch) {
-             const indent = choiceMatch[1];
-             const quoteChar = choiceMatch[2];
-             const text = choiceMatch[3];
-             // Simple check to exclude lines that just have quotes but are not text (unlikely in choices but safety first)
-             if (text.trim()) {
-                 entries.push({
-                     id: `line_${index}`,
-                     lineIndex: index,
-                     originalText: text,
-                     translatedText: '',
-                     type: 'choice',
-                     status: 'pending',
-                     indentation: indent,
-                     isQuoteBlock: false,
-                     quoteChar: quoteChar,
-                 });
-             }
-             return;
-        }
-
-        // Check for Dialogue or Narration
-        const diagMatch = line.match(dialogueRegex);
-        if (diagMatch) {
-            const indent = diagMatch[1];
-            const speaker = diagMatch[2] || undefined; // If undefined, it's narration
-            const quoteChar = diagMatch[3];
-            const text = diagMatch[4];
-            
-            // Filter out obviously non-translatable strings (like file paths, empty strings, pure numbers/symbols)
-            // This is a heuristic. In Ren'Py, dialogue is usually distinct.
-            // Avoid lines that look like: $ variable = "string" (Wait, regex handles start of line, so variable assignment usually has = before string)
-            // But verify: line starts with indent then (speaker) then string.
-            // If it's an assignment like `$ s = "v"`, the regex ^(\s*)(\w+) "..." matches?
-            // Yes: indent="", speaker="s", text="v".
-            // RenPy code usually starts with $ for python one-liners.
-            if (line.trim().startsWith('$')) return;
-            if (line.trim().startsWith('image ')) return;
-            if (line.trim().startsWith('define ')) return;
-            if (line.trim().startsWith('default ')) return;
-            if (line.trim().startsWith('play ')) return;
-            if (line.trim().startsWith('scene ')) return;
-            if (line.trim().startsWith('show ')) return;
-
-            if (text.trim()) {
-                entries.push({
-                    id: `line_${index}`,
-                    lineIndex: index,
-                    originalText: text,
-                    translatedText: '',
-                    type: speaker ? 'dialogue' : 'narration',
-                    speaker: speaker,
-                    status: 'pending',
-                    indentation: indent,
-                    isQuoteBlock: false,
-                    quoteChar: quoteChar
-                });
-            }
-        }
-    });
-
-    return entries;
-}
-
-export function reconstructRenpyScript(file: RenpyFile): string {
-    const lines = [...file.rawLines];
-    
-    file.entries.forEach(entry => {
-        if (entry.status === 'done' && entry.translatedText) {
-            // Reconstruct the line based on original indentation and quotes
-            const translated = entry.translatedText.replace(/"/g, '\\"'); // Escape quotes inside the string
-            
-            // Regex to find where to replace. We rely on the stored lineIndex
-            const originalLine = lines[entry.lineIndex];
-            
-            // Safe replacement: look for the original text substring
-            // Using replace might fail if text contains special regex chars.
-            // Better to reconstruct based on structure if possible, or string replacement.
-            // Structure reconstruction:
-            
-            if (entry.type === 'choice') {
-                // indent + "text" + :
-                lines[entry.lineIndex] = `${entry.indentation}${entry.quoteChar}${translated}${entry.quoteChar}:`;
-            } else {
-                // indent + (speaker ) + "text"
-                const speakerPart = entry.speaker ? `${entry.speaker} ` : '';
-                lines[entry.lineIndex] = `${entry.indentation}${speakerPart}${entry.quoteChar}${translated}${entry.quoteChar}`;
-            }
-        }
-    });
-
-    return lines.join('\n');
 }
