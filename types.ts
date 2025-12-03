@@ -42,6 +42,28 @@ export interface RpgMakerFile {
   status: 'loaded' | 'processing' | 'done';
 }
 
+// Interface mới cho dữ liệu Ren'Py
+export interface RenpyEntry {
+  id: string; // Line index or unique ID
+  lineIndex: number; // Dòng thứ mấy trong file gốc
+  originalText: string; // Nội dung trong ngoặc kép
+  translatedText: string;
+  type: 'dialogue' | 'narration' | 'choice' | 'string';
+  speaker?: string; // Mã nhân vật (vd: 'e', 'g')
+  status: 'pending' | 'translating' | 'done' | 'error';
+  indentation: string; // Giữ nguyên khoảng trắng đầu dòng
+  isQuoteBlock: boolean; // Có nằm trong block """...""" hay không (advanced)
+  quoteChar: string; // Dấu ' hay "
+}
+
+export interface RenpyFile {
+  id: string;
+  fileName: string;
+  rawLines: string[]; // Lưu toàn bộ nội dung file gốc theo dòng
+  entries: RenpyEntry[]; // Chỉ lưu các dòng cần dịch
+  status: 'loaded' | 'processing' | 'done';
+}
+
 export interface HistoryFolder {
   id: string;
   name: string;

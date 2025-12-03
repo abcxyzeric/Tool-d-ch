@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { HomeIcon, SettingsIcon, KeyIcon, PaletteIcon, DocumentTextIcon, ClockIcon, ShieldCheckIcon } from './icons';
 
-type Page = 'start' | 'settings' | 'rpg_parser' | 'history' | 'safetySettings';
+type Page = 'start' | 'settings' | 'rpg_parser' | 'renpy_parser' | 'history' | 'safetySettings';
 
 interface SideNavProps {
   currentPage: Page;
@@ -44,6 +44,15 @@ const SideNav: React.FC<SideNavProps> = ({ currentPage, onNavigate, onOpenApiSet
               >
                 <DocumentTextIcon className="w-5 h-5" />
                 <span className="truncate">Dịch RPG Maker MZ</span>
+              </button>
+            </li>
+            <li>
+              <button 
+                onClick={() => onNavigate('renpy_parser')}
+                className={`${navItemClasses} w-full ${currentPage === 'renpy_parser' ? activeNavItemClasses : ''}`}
+              >
+                <DocumentTextIcon className="w-5 h-5" />
+                <span className="truncate">Dịch Ren'Py (.rpy)</span>
               </button>
             </li>
             <li>
